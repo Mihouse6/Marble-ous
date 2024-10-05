@@ -18,7 +18,11 @@ public class Orientation : MonoBehaviour
     void Start()
     {
         // Make sure device supprts Gyroscope
-        if (!SystemInfo.supportsGyroscope) throw new Exception("Device does not support Gyroscopoe");
+        if (!SystemInfo.supportsGyroscope)
+        {
+            enabled = false;
+            throw new Exception("Device does not support Gyroscopoe");
+        }
 
         gyro = Input.gyro;
         gyro.enabled = true;    // Must enable the gyroscope
