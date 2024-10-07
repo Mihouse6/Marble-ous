@@ -18,6 +18,7 @@ public class GridNode : MonoBehaviour
     [HideInInspector] public bool[] AdjacentNodesConnected; //Arranged [north, east, south, west]
 
     [HideInInspector] public GridConnection[] Connections; //Arranged [north, east, south, west]
+    [HideInInspector] public int ConnectionsCount = 0;
 
     [Header("Child Object References")]
     [SerializeField] private GameObject NorthWall;
@@ -70,15 +71,15 @@ public class GridNode : MonoBehaviour
     private void Update()
     {
         //DEBUG
-        for (int i = 0; i < Connections.Length; i++)
-        {
-            if (Connections[i].NodeB == null) continue;
+        //for (int i = 0; i < Connections.Length; i++)
+        //{
+        //    if (Connections[i].NodeB == null) continue;
 
-            if (Connections[i].Connected == true)
-                Debug.DrawLine(transform.position, Connections[i].NodeB.transform.position, Color.green);
-            else if (Connections[i].Connected == false)
-                Debug.DrawLine(transform.position, Connections[i].NodeB.transform.position, Color.red);
-        }
+        //    if (Connections[i].Connected == true)
+        //        Debug.DrawLine(transform.position, Connections[i].NodeB.transform.position, Color.green);
+        //    else if (Connections[i].Connected == false)
+        //        Debug.DrawLine(transform.position, Connections[i].NodeB.transform.position, Color.red);
+        //}
         //DEBUG
     }
 
@@ -109,6 +110,8 @@ public class GridNode : MonoBehaviour
             if (B.Connections[(int)Direction.East].Connected == false)
                 B.Connections[(int)Direction.East].SetConnected(true);
         }
+
+        ConnectionsCount++;
     }
 
     //Disconnect from the specified node and add the interposing wall
@@ -138,6 +141,8 @@ public class GridNode : MonoBehaviour
             if (B.Connections[(int)Direction.East].Connected == true)
                 B.Connections[(int)Direction.East].SetConnected(false);
         }
+
+        ConnectionsCount--;
     }
 }
 

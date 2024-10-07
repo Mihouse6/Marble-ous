@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Notifications.iOS;
 using UnityEngine;
 
 public class Grid : MonoBehaviour
@@ -13,6 +14,12 @@ public class Grid : MonoBehaviour
     private List<GridConnection> PotentialConnections;
     private GridNode StartNode;
     private GridNode DestinationNode;
+
+    //Path Finding Variables
+    private List<GridNode> OpenList;
+    private List<GridNode> ClosedList;
+    private Dictionary<GridNode, GridNode> CameFrom;
+    private List<GridNode> Path; //DEBUG
 
     public GameObject GridNodePrefab;
 
@@ -28,18 +35,45 @@ public class Grid : MonoBehaviour
     {
         Nodes = new GridNode[DimensionX, DimensionY];
 
+        //DEBUG
+        //long startTicks = System.DateTime.Now.Ticks;
+
         GenerateGrid();
+
+        //DEBUG
+        //long endTicks = System.DateTime.Now.Ticks;
+        //System.TimeSpan span = new System.TimeSpan(endTicks - startTicks);
+        //Debug.Log("Generate Grid: " + span.Milliseconds);
+        //startTicks = System.DateTime.Now.Ticks;
 
         RandomiseMaze();
 
-        SpawnMarble();
+        //DEBUG
+        //endTicks = System.DateTime.Now.Ticks;
+        //span = new System.TimeSpan(endTicks - startTicks);
+        //Debug.Log("Randomise Maze: " + span.Milliseconds);
+    }
 
-        SpawnDestination();
+    private void Update()
+    {
+        //DEBUG
+        if (Path != null)
+        {
+            for (int i = 0; i < Path.Count - 1; i++)
+            {
+                Debug.DrawLine(Path[i].transform.position, Path[i + 1].transform.position, Color.yellow);
+            }
+        }
     }
 
     //Instantiates and arranges GridNode objects to fill the defined grid dimensions
     private void GenerateGrid()
     {
+        //DEBUG
+        //long startTicks = System.DateTime.Now.Ticks;
+        //long endTicks;
+        //System.TimeSpan span;
+
         //Geometry calculations
         float boardWidth = DimensionX;
         float boardHeight = DimensionY;
@@ -72,6 +106,12 @@ public class Grid : MonoBehaviour
             currentY = boardMinY;
         }
 
+        //DEBUG
+        //endTicks = System.DateTime.Now.Ticks;
+        //span = new System.TimeSpan(endTicks - startTicks);
+        //Debug.Log("Generate Grid - Nodes: " + span.Milliseconds);
+        //startTicks = System.DateTime.Now.Ticks;
+
         //Loop through grid nodes and set node properties
         for (int i = 0; i < Nodes.GetLength(0); i++)
         {
@@ -89,11 +129,19 @@ public class Grid : MonoBehaviour
                 node.West = GetNode(i - 1, j);
             }
         }
+
+        //DEBUG
+        //endTicks = System.DateTime.Now.Ticks;
+        //span = new System.TimeSpan(endTicks - startTicks);
+        //Debug.Log("Generate Grid - Connections: " + span.Milliseconds);
     }
 
     //Generates a random maze from an initilised grid
     private void RandomiseMaze()
     {
+        //DEBUG
+        //long startTicks = System.DateTime.Now.Ticks;
+
         //Initialise lists
         Unexplored = GetNodesAsList();
         Explored = new List<GridNode>();
@@ -112,6 +160,55 @@ public class Grid : MonoBehaviour
             connection.SetConnected(true);
             ExploreNode(connection.NodeB);
         }
+
+        //DEBUG
+        //long endTicks = System.DateTime.Now.Ticks;
+        //System.TimeSpan span = new System.TimeSpan(endTicks - startTicks);
+        //Debug.Log("Randomise Maze - Randomisation: " + span.Milliseconds);
+        //startTicks = System.DateTime.Now.Ticks;
+
+        //Collect a list of 1-connection GridNodes
+        List<GridNode> deadEnds = Explored.Where(gn => gn.ConnectionsCount == 1).ToList();
+
+        //Iterate through node pairs and find the pair with the longest shortest-path
+        int longestPathLength = int.MinValue;
+        GridNode chosenA = deadEnds[0];
+        GridNode chosenB = deadEnds[1];
+        for (int a = 0; a < deadEnds.Count - 1; a++)
+        {
+            for (int b = a + 1; b < deadEnds.Count; b++)
+            {
+                //Retrieve GridNodes
+                GridNode currentA = deadEnds[a];
+                GridNode currentB = deadEnds[b];
+
+                //Find shortest path from a - b
+                List<GridNode> path = FindPath(currentA, currentB);
+
+                //Check if new longest
+                if (path.Count > longestPathLength)
+                {
+                    //Assign new lngest path
+                    chosenA = currentA;
+                    chosenB = currentB;
+                    longestPathLength = path.Count;
+                    Path = path;
+                }
+            }
+        }
+
+        //Set chosen nodes A and B as the start and destination respectively
+        StartNode = chosenA;
+        DestinationNode = chosenB;
+
+        //Spawn the marble & goal objects
+        SpawnMarble();
+        SpawnDestination();
+
+        //DEBUG
+        //endTicks = System.DateTime.Now.Ticks;
+        //span = new System.TimeSpan(endTicks - startTicks);
+        //Debug.Log("Randomise Maze - Spawn Start & End: " + span.Milliseconds);
     }
 
     //Explored the current node and collects its potential connections
@@ -135,28 +232,17 @@ public class Grid : MonoBehaviour
         Unexplored.Remove(node);
     }
 
-    //Randomly pick a start node and spawn the marble
+    //Spawn the marble at the start node
     private void SpawnMarble()
     {
-        //Select random node as start
-        List<GridNode> nodesList = GetNodesAsList();
-        nodesList.Remove(StartNode);
-        StartNode = nodesList[Random.Range(0, nodesList.Count)];
-
-        //Spawn the marble
         GameObject marble = Instantiate(Marble, transform);
         marble.name = Marble.name;
         marble.transform.position = StartNode.MarbleSpawn.transform.position;
     }
 
-    //Randomly pick a destination node and spawn the destination
+    //SPawn the goal at the destination node
     private void SpawnDestination()
     {
-        //Select random node as destination
-        List<GridNode> nodesList = GetNodesAsList();
-        DestinationNode = nodesList[Random.Range(0, nodesList.Count)];
-
-        //Spawn the destination
         GameObject destination = Instantiate(Destination, transform);
         destination.name = Destination.name;
         destination.transform.position = DestinationNode.DestinationSpawn.transform.position;
@@ -182,5 +268,97 @@ public class Grid : MonoBehaviour
                 nodesList.Add(Nodes[i, j]);
 
         return nodesList;
+    }
+
+    //Finds the shortest path from the start node to the end node, if exists. Returns an ordered list of sequential nodes, or null if no path exists
+    private List<GridNode> FindPath(GridNode start, GridNode goal)
+    {
+        //Initialise lists
+        OpenList = new List<GridNode>();
+        ClosedList = new List<GridNode>();
+        CameFrom = new Dictionary<GridNode, GridNode>();
+
+        //Begin
+        OpenList.Add(start);
+
+        float gScore = 0;
+        float fScore = gScore + Heuristic(start, goal);
+
+        while (OpenList.Count > 0)
+        {
+            //Find the Node in openList that has the lowest fScore
+            GridNode currentNode = BestOpenListFScore(start, goal);
+
+            //Found the end, reconstruct entire path and return
+            if (currentNode == goal)
+                return ReconstructPath(CameFrom, currentNode);
+
+            OpenList.Remove(currentNode);
+            ClosedList.Add(currentNode);
+
+            for (int i = 0; i < currentNode.Connections.Length; i++)
+            {
+                if (currentNode.Connections[i] == null) continue;
+                if (!currentNode.Connections[i].Connected) continue;
+                GridNode thisNeighbourNode = currentNode.Connections[i].NodeB;
+
+                //Ignore if neighbour node is attached
+                if (!ClosedList.Contains(thisNeighbourNode))
+                {
+                    //Distance from current to the nextNode
+                    float tentativeGScore = Heuristic(start, currentNode) + Heuristic(currentNode, thisNeighbourNode);
+
+                    //Check to see if in openList or if new GScore is more sensible
+                    if (!OpenList.Contains(thisNeighbourNode) || tentativeGScore < gScore)
+                        OpenList.Add(thisNeighbourNode);
+
+                    //Add to Dictionary - this neighour came from this parent
+                    if (!CameFrom.ContainsKey(thisNeighbourNode))
+                        CameFrom.Add(thisNeighbourNode, currentNode);
+
+                    gScore = tentativeGScore;
+                    fScore = Heuristic(start, thisNeighbourNode) + Heuristic(thisNeighbourNode, goal);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    //Heuristic used for path finding assessment
+    private  float Heuristic(GridNode a, GridNode b)
+    {
+        return Vector3.Distance(a.transform.position, b.transform.position);
+    }
+
+    //Finds the node with the best FScore in OpenList
+    private GridNode BestOpenListFScore(GridNode start, GridNode goal)
+    {
+        int bestIndex = 0;
+
+        for (int i = 0; i < OpenList.Count; i++)
+        {
+            if ((Heuristic(OpenList[i], start) + Heuristic(OpenList[i], goal)) < (Heuristic(OpenList[bestIndex], start) + Heuristic(OpenList[bestIndex], goal)))
+                bestIndex = i;
+        }
+
+        GridNode bestNode = OpenList[bestIndex];
+        return bestNode;
+    }
+
+    //Backtrack along the explored path to reconstruct a path sequence
+    public List<GridNode> ReconstructPath(Dictionary<GridNode, GridNode> CF, GridNode current)
+    {
+        List<GridNode> finalPath = new List<GridNode>();
+        finalPath.Add(current);
+
+        while (CF.ContainsKey(current))
+        {
+            current = CF[current];
+            finalPath.Add(current);
+        }
+
+        finalPath.Reverse();
+        return finalPath;
     }
 }
