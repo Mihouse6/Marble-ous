@@ -152,6 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 957c0636535ab2246b5d1ae65df4509e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Grid: {fileID: 296699084}
 --- !u!4 &902915
 Transform:
   m_ObjectHideFlags: 0
@@ -265,6 +266,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 07e2e989c7fd4d04384b49ce515a1844, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  Weight1Connection: 500
+  Weight2Connection: 1
+  Weight3Connection: 1
   GridNodePrefab: {fileID: 5023673042670507176, guid: a527667730369794fa3b084ea07f7b69,
     type: 3}
   DimensionX: 10

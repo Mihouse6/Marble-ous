@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour
     //Singleton Setup
     public static GameManager instance = null;
 
+    public Grid Grid;
+
     //Awake Checks - Singleton setup
     void Awake()
     {
@@ -29,9 +31,9 @@ public class GameManager : MonoBehaviour
         //DEBUG
     }
 
-    //Finished the current level and reloads the scene
+    //Finishes the current level and loads the next one
     public void FinishLevel()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        Grid.NextLevel();
     }
 }
