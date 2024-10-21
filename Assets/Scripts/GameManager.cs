@@ -8,6 +8,8 @@ public class GameManager : MonoBehaviour
     //Singleton Setup
     public static GameManager instance = null;
 
+    [HideInInspector] public bool isPaused = false;
+
     public Grid Grid;
 
     //Awake Checks - Singleton setup
@@ -34,6 +36,9 @@ public class GameManager : MonoBehaviour
     //Finishes the current level and loads the next one
     public void FinishLevel()
     {
+        AudioManager.instance.PlaySFX("Level_Complete");
+        HapticsManager.instance.DefaultVibration();
+
         Grid.NextLevel();
     }
 }
